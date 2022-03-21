@@ -1,0 +1,18 @@
+# exclude node_modules...
+node_modules/
+package-lock.json
+
+# exlude any log files...
+logs/appLogs/*.log
+logs/appLogs/*.json
+logs/couchDBLogs/*.log
+logs/couchDBLogs/*.json
+
+# exclude any actual apps
+couch-users/
+meter-billing/
+meter-tools/
+meters/
+test/
+public/*.*
+certs/*.*

@@ -1,0 +1,20 @@
+[Unit]
+Description=couch-proxy.js - https app server to also proxy couch to local address...
+After=network.target
+
+[Service]
+Type=simple
+
+User=hawkridge
+
+Group=hawkridge
+
+ExecStart=/usr/bin/node /home/cliff/dev-node/couch-proxy/couch-proxy.js
+WorkingDirectory=/home/cliff/dev-node/couch-proxy/couch-proxy.js
+
+# Restart=on-failure
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
