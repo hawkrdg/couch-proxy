@@ -11,33 +11,22 @@ conf = {
 
   },
   mailTransportOpts: {
-    host: 'smtp.dreamhost.com',
+    host: 'my.smtp.host',
     port: 465,
     secure: true,
     auth: {
-      user: 'cliff@hawkrdg.com',
-      pass: 'hawkrdg.com'
+      user: 'smtpuser@mydomain.com',
+      pass: 'smtppw'
     }
   },
   mailMessageOpts: {
     to: [
-      'cliff@hawkrdg.com',
-      // 'jpurnell@mullinsgroup.com'
+      'someone@somedomain.com',
+    	'someoneelse@someotherdomain.com'
     ],
     from: 'couch-proxy',
-    subject: '{{level}} - from couch-proxy@hawkridge.main . . .'
+    subject: '{{level}} - from couch-proxy . . .'
   },
-  mailOpts: {
-    host: 'smtp.dreamhost.com',
-    port: 465,
-    ssl: true,
-    username: 'cliff@hawkrdg.com',
-    password: 'hawkrdg.com',
-    to: 'cliff@hawkrdg.com, cliffsmith53581@gmail.com',
-    from: 'couch-proxy-server',
-    subject: '{{level}} - hawkridge.main . . .'
-  }
-
 }
 
 module.exports = conf;
