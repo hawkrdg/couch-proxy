@@ -1,7 +1,6 @@
 //-- COUCH-PROXY.JS - production app server
 //			serve angular app at https://server_url:secure_server_port/ to public folder
-//			proxy https://server_url:secure_server_port/couch/whatever to couchdb_url:couchdb_port/whatever
-//			comment 'consoleLogger' lines when running as a service...
+//			proxy https://server_url:secure_server_port/ng-app/couch/whatever to couchdb_url:couchdb_port/whatever
 //
 const fs 					= require('fs');
 const path				= require('path');
@@ -35,6 +34,43 @@ const mailLogger = loggers.mailLogger;
 //
 let logData, reqMethod, reqPath, reqQuery, reqData;
 
+//-- util funcs to build log data & write logs...
+//
+const buildReqInfo = (caller, data, req) => {
+	reqMethod = req.method;
+	reqPath = req.url.split('?')[0];
+	reqQuery = req.url.split('?')[1] ? req.url.split('?')[1] : 'none...';
+	reqData = Object.keys(data).length != 0 ? data : 'none...';
+	logData = `${(new Date()).toLocaleString()} - ${URL}/${caller.toUpperCase()}/COUCH\n${reqMethod} ${reqPath}\n`;
+}
+
+const buildLogData = (resdata) => {
+	if (resdata != '') {
+		const data = JSON.parse(resdata);
+		if (data.error) {
+			logData += `ERROR: ${data.error}, ${data.reason}\n`;
+			if ( !runAsService) {
+				consoleLogger.error(logData);
+			}
+			appLogger.error(logData);
+			couchLogger.error(logData);
+			mailLogger.error(logData);
+		} else {
+			if ( !runAsService) {
+				consoleLogger.info(logData);
+			}
+			appLogger.info(logData);
+			logData += `request data: ${reqData}\nrequest query: ${reqQuery}\n`;
+			if (data.total_rows) {
+				logData += `fetched ${data.rows.length} records...\n`;
+			} else {
+				logData += `response data: ${JSON.stringify(data, null, 2)}\n`;
+			}
+			couchLogger.info(logData);
+		}
+	}
+}
+
 //-- create the app & server...
 //
 const app = express();
@@ -42,62 +78,64 @@ const secureServer = https.createServer({key: privkey, cert: cert}, app);
 
 //-- host angular apps...
 //
-app.use(express.static('public'));
-// app.use('/meters', serveStatic(path.join(__dirname, 'meters')));
-app.use('/meters', serveStatic('meters'));
-app.use('/meter-billing', serveStatic('meter-billing'));
-app.use('/meter-tools', serveStatic('meter-tools'));
-app.use('/couch-users', serveStatic('couch-users'));
-app.use('/test', serveStatic('test'));
+app.use(express.static('public'));		// serve ng-root-app https://URL/
+app.use('/ng-app1', serveStatic('ng-app1'));	// serve app1 at https://URL/ng-app1/
+app.use('/ng-app2', serveStatic('ng-app2'));	// serve app2 at https://URL/ng-app2/
+app.use('/test', serveStatic('test'));		// testing playground at https://URL/test/
 
-//-- proxy /couch to couchdb server...
+//-- proxy /couch to couchdb server for all apps...
 //
-app.use('/meters/couch', proxy(COUCH_URL + ':' + COUCH_PORT))
 app.use('/couch', proxy(COUCH_URL + ':' + COUCH_PORT, {
 
 	//-- log request, query, data...
 	//
 	proxyReqBodyDecorator: function(bodyContent, srcReq) {
-		reqMethod = srcReq.method;
-		reqPath = srcReq.url.split('?')[0];
-		reqQuery = srcReq.url.split('?')[1] ? srcReq.url.split('?')[1] : 'none...';
-		reqData = Object.keys(bodyContent).length != 0 ? bodyContent : 'none...';
-		logData = `${(new Date()).toLocaleString()} - COUCHDB\n${reqMethod} ${reqPath}\n`;
-    return bodyContent;
-  },
+		buildReqInfo('ng-root-app', bodyContent, srcReq);
+		return bodyContent;
+	},
 
 	//-- log response...
 	//
 	userResDecorator: function(proxyRes, proxyResData, userReq, userRes) {
-		if (proxyResData != '') {
-			const data = JSON.parse(proxyResData);
-			if (data.error) {
-				logData += `ERROR: ${data.error}, ${data.reason}\n`;
-				if (  !runAsService) {
-					consoleLogger.error(logData);
-				}
-				appLogger.error(logData);
-				couchLogger.error(logData);
-				mailLogger.error(logData);
-			} else {
-				if (  !runAsService) {
-					consoleLogger.info(logData);
-				}
-				appLogger.info(logData);
-				logData += `request data: ${reqData}\nrequest query: ${reqQuery}\n`;
-				if (data.total_rows) {
-					logData += `fetched ${data.rows.length} records...\n`;
-				} else {
-					logData += `response data: ${JSON.stringify(data, null, 2)}\n`;
-				}
-				couchLogger.info(logData);
-			}
-		}
+		buildLogData(proxyResData);
 		return proxyResData;
 	}
 }));
 
-//-- test endpoint...
+app.use('/ng-app1/couch', proxy(COUCH_URL + ':' + COUCH_PORT, {
+	proxyReqBodyDecorator: function(bodyContent, srcReq) {
+		buildReqInfo('ng-app1', bodyContent, srcReq);
+    return bodyContent;
+  },
+	userResDecorator: function(proxyRes, proxyResData, userReq, userRes) {
+		buildLogData(proxyResData);
+		return proxyResData;
+	}
+}));
+
+app.use('/ng-app2/couch', proxy(COUCH_URL + ':' + COUCH_PORT, {
+	proxyReqBodyDecorator: function(bodyContent, srcReq) {
+		buildReqInfo('ng-app2', bodyContent, srcReq);
+    return bodyContent;
+  },
+	userResDecorator: function(proxyRes, proxyResData, userReq, userRes) {
+		buildLogData(proxyResData);
+		return proxyResData;
+	}
+}));
+
+app.use('/test/couch', proxy(COUCH_URL + ':' + COUCH_PORT, {
+	proxyReqBodyDecorator: function(bodyContent, srcReq) {
+		buildReqInfo('test', bodyContent, srcReq);
+    return bodyContent;
+  },
+	userResDecorator: function(proxyRes, proxyResData, userReq, userRes) {
+		buildLogData(proxyResData);
+		return proxyResData;
+	}
+}));
+
+//-- quick test endpoint...
 //
 app.get("/status", (req, res) => {
 	const logData = `${(new Date()).toLocaleString()} - APP\nSERVER STATUS\naddress is: https://${URL}:${SECURE_PORT}/status\nserver time is: ${(new Date()).toLocaleTimeString()}\nsecure: ${JSON.stringify(req.secure)}\n`;
