@@ -9,10 +9,7 @@ logs/couchDBLogs/*.log
 logs/couchDBLogs/*.json
 
 # exclude any actual apps
-couch-users/
-meter-billing/
-meter-tools/
-meters/
+ng-app1/
+ng-app2/
 test/
-public/*.*
-certs/*.*
+public/
