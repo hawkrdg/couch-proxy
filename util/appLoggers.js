@@ -93,28 +93,12 @@ const winstonMailLiteLogger = winston.createLogger({
   exitOnError: false, //-- do not exit on handled exceptions
 });
 
-const winstonMailLogger = winston.createLogger({
-  format: winston.format.simple(),
-  transports: [
-    new winston.transports.Mail(mailOptions)
-  ],
-  exitOnError: false, //-- do not exit on handled exceptions
-});
-
-//-- create a stream object with a 'write' function that will be used by `morgan`
-// logger.stream = {
-//   write: function(message, encoding) {
-//     logger.info(message);
-//   },
-// };
-
 //-- loggers for export...
 //
 const loggers = {
   appFileLogger: appLogger,
   couchFileLogger: couchLogger,
   appConsoleLogger: consoleLogger,
-  // mailLogger: winstonMailLogger
   mailLogger: winstonMailLiteLogger
 }
 
